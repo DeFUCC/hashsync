@@ -13,7 +13,10 @@ class GenericWebTorrentServer {
   constructor(options = {}) {
     this.config = {
       port: options.port || process.env.PORT || 8080,
-      hostname: options.hostname || process.env.HOST || 'localhost', // Changed from 0.0.0.0
+      // Address to bind/listen on inside the container/host
+      bindAddress: options.bindAddress || process.env.BIND || '0.0.0.0',
+      // Public hostname used for logs/links/announce display
+      publicHostname: options.publicHostname || options.hostname || process.env.HOST || 'localhost',
       interval: options.interval || 600000, // 10min - standard BitTorrent interval
       ...options
     }
@@ -61,7 +64,7 @@ class GenericWebTorrentServer {
       if (wsAddr) console.log(`📡 WebSocket: ws://${wsAddr.address}:${wsAddr.port}`)
       if (udpAddr) console.log(`📡 UDP: udp://${udpAddr.address}:${udpAddr.port}`)
       if (httpAddr) console.log(`📡 HTTP: http://${httpAddr.address}:${httpAddr.port}/announce`)
-      console.log(`🌐 Web Interface: http://localhost:${this.config.port}/share`)
+      console.log(`🌐 Web Interface: http://${this.config.publicHostname}:${this.config.port}/share`)
     })
 
     // Track activity for stats
@@ -144,9 +147,14 @@ class GenericWebTorrentServer {
           console.error(`❌ Port ${this.config.port} is already in use`)
           console.log('💡 Try a different port: node tracker.js --port 8081')
           process.exit(1)
+        } else if (err.code === 'EADDRNOTAVAIL') {
+          console.error(`❌ Address not available: ${err.address || ''}:${err.port || this.config.port}`)
+          console.log('💡 Inside Docker/containers, bind to all interfaces: --bind 0.0.0.0')
+          console.log('   And use --host <public-hostname> for external access (e.g. sslip.io).')
+          process.exit(1)
         } else if (err.code === 'EINVAL') {
           console.error('❌ Invalid address/port combination')
-          console.log('💡 Try: node tracker.js --host localhost --port 8080')
+          console.log('💡 Try: node tracker.js --bind 0.0.0.0 --port 8080')
           process.exit(1)
         } else if (err.code === 'EACCES') {
           console.error(`❌ Permission denied for port ${this.config.port}`)
@@ -158,7 +166,7 @@ class GenericWebTorrentServer {
         }
       })
 
-      this.tracker.listen(this.config.port, this.config.hostname, (err) => {
+      this.tracker.listen(this.config.port, this.config.bindAddress, (err) => {
         if (err) {
           console.error(`❌ Failed to start server: ${err.message}`)
           if (err.code === 'EADDRINUSE') {
@@ -203,7 +211,12 @@ if (import.meta.url === `file://${process.argv[1]}`) {
         config.port = parseInt(args[++i])
         break
       case '--host':
-        config.hostname = args[++i]
+        // Public hostname (e.g., sslip.io) shown in logs/links
+        config.publicHostname = args[++i]
+        break
+      case '--bind':
+        // Bind/listen address (inside container/host)
+        config.bindAddress = args[++i]
         break
       case '--help':
       case '-h':
@@ -218,13 +231,15 @@ Files needed:
 
 Options:
   -p, --port <number>   Server port (default: 8080)
-  --host <string>       Server hostname (default: localhost)
+  --bind <string>       Bind address (default: 0.0.0.0)
+  --host <string>       Public hostname for links (default: localhost)
   -h, --help           Show this help
 
 Examples:
   node tracker.js                    # Start on localhost:8080
   node tracker.js --port 8081        # Use different port
-  node tracker.js --host 0.0.0.0     # Bind to all interfaces
+  node tracker.js --bind 0.0.0.0     # Bind to all interfaces
+  node tracker.js --host my.sslip.io # Public hostname for links
 
 Web Interface: http://localhost:8080/share
         `)

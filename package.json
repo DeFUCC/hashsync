@@ -14,7 +14,8 @@
 		"node": "20"
 	},
 	"scripts": {
-		"start": "node tracker.js"
+		"start": "node tracker.js --port 8080",
+		"local": "node tracker.js --bind localhost --port 8080"
 	},
 	"dependencies": {
 		"bittorrent-tracker": "^11.2.2"
