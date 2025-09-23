@@ -1,0 +1,23 @@
+{
+	"name": "fast-track",
+	"version": "0.1.0",
+	"description": "Simple web-torrent tracker for basic sync operations",
+	"type": "module",
+	"homepage": "https://fast-track.defucc.me",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/davay42/fast-track.git"
+	},
+	"author": "davay42 <davay@defucc.me>",
+	"packageManager": "pnpm@10.15.1",
+	"engines": {
+		"node": "20"
+	},
+	"scripts": {
+		"start": "node tracker.js"
+	},
+	"dependencies": {
+		"bittorrent-tracker": "^11.2.2"
+	},
+	"devDependencies": {}
+}

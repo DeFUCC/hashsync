@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebTorrent P2P File Sharing</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f7f1d6;
+      min-height: 100vh;
+      color: #2b2b2b;
+      padding: 16px;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: #fffdf5;
+      border-radius: 12px;
+      padding: 16px;
+      margin: 12px 0;
+      border: 1px solid #efe4bf;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 16px;
+      font-size: 1.6rem;
+    }
+
+    .section {
+      margin: 12px 0;
+    }
+
+    .section h2 {
+      margin-bottom: 10px;
+      color: #6b4ca5;
+      font-size: 1.05rem;
+    }
+
+    input,
+    button,
+    textarea {
+      width: 100%;
+      padding: 10px;
+      margin: 6px 0;
+      border: 1px solid #e6dba9;
+      border-radius: 8px;
+      font-size: 15px;
+      background: #fffef8;
+      color: #2b2b2b;
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    button {
+      background: linear-gradient(45deg, #e67e22, #c46619);
+      color: #ffffff;
+      cursor: pointer;
+      font-weight: bold;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 16px rgba(230, 126, 34, 0.25);
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    textarea {
+      background: #fffef8;
+      color: #2b2b2b;
+      resize: vertical;
+    }
+
+    .progress {
+      width: 100%;
+      height: 8px;
+      background: #f0e7bf;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #6b4ca5, #e67e22);
+      transition: width 0.3s;
+    }
+
+    .peer-count {
+      background: #efe4bf;
+      padding: 8px;
+      border-radius: 4px;
+      margin: 8px 0;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 15px;
+    }
+
+    .stat {
+      background: #fff9e0;
+      padding: 15px;
+      border-radius: 8px;
+      text-align: center;
+      border: 1px solid #efe4bf;
+    }
+
+    .log {
+      background: #fff8dc;
+      padding: 15px;
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 14px;
+      max-height: 200px;
+      overflow-y: auto;
+      border: 1px solid #efe4bf;
+    }
+
+    .hash {
+      word-break: break-all;
+      background: #fffef2;
+      padding: 10px;
+      border-radius: 4px;
+      font-family: monospace;
+      border: 1px solid #efe4bf;
+    }
+
+    .muted {
+      color: #6b4ca5;
+      opacity: 0.8;
+      font-size: 0.9rem;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .dropzone {
+      border: 2px dashed #d8c98f;
+      background: #fffdf2;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      color: #6b4ca5;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+    }
+
+    .dropzone:hover {
+      background: #fff7d0;
+      border-color: #c9b86d;
+    }
+
+    .dropzone.dragover {
+      background: #fff1b2;
+      border-color: #a78b3b;
+    }
+
+    #qrContainer svg {
+      width: 140px;
+      height: 140px;
+      display: block;
+      margin: 8px auto 0;
+    }
+
+    #preview {
+      display: grid;
+      gap: 8px;
+    }
+
+    #preview img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+      border: 1px solid #efe4bf;
+    }
+
+    #preview video,
+    #preview audio,
+    #preview iframe {
+      width: 100%;
+      border-radius: 8px;
+      border: 1px solid #efe4bf;
+      background: #fffef8;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>Fast-track</h1>
+    <h2 style="text-align: center; font-size:medium; font-weight: normal;">Webtorrent P2P file sharing</h2>
+
+    <div class="card">
+      <div class="stats" id="stats">
+        <div class="stat">
+          <div>Torrents</div>
+          <div id="torrentCount">0</div>
+        </div>
+        <div class="stat">
+          <div>Peers</div>
+          <div id="peerCount">0</div>
+        </div>
+        <div class="stat">
+          <div>Announces</div>
+          <div id="announceCount">0</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section">
+        <h2>Share</h2>
+        <div id="dropzone" class="dropzone">
+          Drop file here or click to select
+        </div>
+        <input type="file" id="fileInput" accept="*/*">
+        <div class="row">
+          <button id="shareBtn">Seed selected file</button>
+          <span class="muted" style="margin-left:8px">Tracker will appear when ready</span>
+        </div>
+        <div id="shareProgress" style="display:none;">
+          <div class="progress">
+            <div class="progress-bar" id="shareProgressBar"></div>
+          </div>
+          <div id="shareStatus"></div>
+        </div>
+        <div id="shareHash" style="display:none;">
+          <h3 class="muted">InfoHash</h3>
+          <div class="hash" id="hashValue"></div>
+          <h3 class="muted" style="margin-top:8px">Open link / QR</h3>
+          <div class="row">
+            <input id="shareLink" readonly>
+            <button id="copyLinkBtn" style="min-width:120px">Copy link</button>
+          </div>
+          <div id="qrContainer" aria-label="QR code"></div>
+          <button id="copyHashBtn" style="margin-top:8px">Copy hash</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section">
+        <h2>Download</h2>
+        <textarea id="hashInput" placeholder="Paste InfoHash or use #hash in URL" rows="2"></textarea>
+        <button id="downloadBtn">Download File</button>
+        <div id="downloadProgress" style="display:none;">
+          <div class="progress">
+            <div class="progress-bar" id="downloadProgressBar"></div>
+          </div>
+          <div id="downloadStatus"></div>
+          <div id="peerInfo" class="peer-count"></div>
+        </div>
+        <div id="preview" class="section" style="display:none;">
+          <h3 class="muted">Preview</h3>
+          <div id="previewContent"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section">
+        <h2>Activity</h2>
+        <div id="log" class="log"></div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import WebTorrent from 'https://esm.sh/webtorrent@2.8.4/dist/webtorrent.min.js'
+    import QRCode from 'https://esm.sh/qrcode@1.5.3'
+
+    const client = new WebTorrent()
+    let currentTorrent = null
+
+    // Get tracker URLs
+    const wsScheme = location.protocol === 'https:' ? 'wss' : 'ws'
+    const trackerUrl = `${wsScheme}://${location.host}/announce`
+
+    function log(message) {
+      const logEl = document.getElementById('log')
+      const time = new Date().toLocaleTimeString()
+      logEl.innerHTML += `[${time}] ${message}\n`
+      logEl.scrollTop = logEl.scrollHeight
+      console.log(message)
+    }
+
+    // Share file function
+    async function shareFile() {
+      const fileInput = document.getElementById('fileInput')
+      const file = fileInput.files[0]
+
+      if (!file) {
+        alert('Please select a file first!')
+        return
+      }
+
+      const shareBtn = document.getElementById('shareBtn')
+      shareBtn.disabled = true
+      shareBtn.textContent = 'Creating torrent...'
+
+      try {
+        const opts = {
+          announce: [trackerUrl],
+          name: file.name
+        }
+
+        const torrent = client.seed(file, opts)
+        currentTorrent = torrent
+
+        document.getElementById('shareProgress').style.display = 'block'
+
+        torrent.on('ready', () => {
+          document.getElementById('hashValue').textContent = torrent.infoHash
+          document.getElementById('shareHash').style.display = 'block'
+          const link = `${location.origin}${location.pathname}#${torrent.infoHash}`
+          const shareLinkEl = document.getElementById('shareLink')
+          shareLinkEl.value = link
+          renderQR(link)
+          log(`✅ Sharing: ${file.name} (InfoHash: ${torrent.infoHash})`)
+        })
+
+        torrent.on('upload', () => {
+          document.getElementById('shareStatus').innerHTML =
+            `Uploaded: ${formatBytes(torrent.uploaded)} | Peers: ${torrent.numPeers}`
+        })
+
+        torrent.on('wire', () => {
+          log(`🔗 New peer connected. Total peers: ${torrent.numPeers}`)
+        })
+
+        torrent.on('error', (err) => {
+          log(`❌ Torrent error: ${err.message}`)
+        })
+
+      } catch (error) {
+        log(`❌ Error sharing file: ${error.message}`)
+      } finally {
+        shareBtn.disabled = false
+        shareBtn.textContent = 'Share File'
+      }
+    }
+
+    // Download file function  
+    async function downloadFile() {
+      const hashInput = document.getElementById('hashInput')
+      const infoHash = hashInput.value.trim()
+
+      if (!infoHash) {
+        alert('Please enter an InfoHash!')
+        return
+      }
+
+      const downloadBtn = document.getElementById('downloadBtn')
+      downloadBtn.disabled = true
+      downloadBtn.textContent = 'Connecting...'
+
+      try {
+        const opts = {
+          announce: [trackerUrl]
+        }
+
+        const torrent = client.add(infoHash, opts)
+        currentTorrent = torrent
+
+        document.getElementById('downloadProgress').style.display = 'block'
+        log(`🔍 Looking for: ${infoHash}`)
+
+        torrent.on('metadata', () => {
+          log(`📋 Found metadata: ${torrent.name} (${formatBytes(torrent.length)})`)
+        })
+
+        torrent.on('ready', () => {
+          log(`✅ Ready to download: ${torrent.name}`)
+          showMinimalPreview(torrent)
+        })
+
+        torrent.on('download', () => {
+          const progress = Math.round(torrent.progress * 100)
+          document.getElementById('downloadProgressBar').style.width = progress + '%'
+          document.getElementById('downloadStatus').innerHTML =
+            `Progress: ${progress}% | Downloaded: ${formatBytes(torrent.downloaded)} / ${formatBytes(torrent.length)} | Speed: ${formatBytes(torrent.downloadSpeed)}/s`
+        })
+
+        torrent.on('wire', () => {
+          document.getElementById('peerInfo').textContent = `Connected to ${torrent.numPeers} peers`
+        })
+
+        torrent.on('done', () => {
+          log(`🎉 Download complete: ${torrent.name}`)
+          // Auto-download the file
+          const file = torrent.files[0]
+          file.blob()
+            .then((blob) => {
+              const url = URL.createObjectURL(blob)
+              const a = document.createElement('a')
+              a.href = url
+              a.download = file.name
+              a.click()
+              // Revoke the object URL after a short delay to free memory
+              setTimeout(() => URL.revokeObjectURL(url), 1_000_000)
+            })
+            .catch((err) => {
+              log(`❌ Error creating download link: ${err.message}`)
+            })
+        })
+
+        torrent.on('error', (err) => {
+          log(`❌ Download error: ${err.message}`)
+        })
+
+      } catch (error) {
+        log(`❌ Error adding torrent: ${error.message}`)
+      } finally {
+        downloadBtn.disabled = false
+        downloadBtn.textContent = 'Download File'
+      }
+    }
+
+    // Copy hash function
+    async function copyHash() {
+      const hashValue = document.getElementById('hashValue').textContent
+      try {
+        await navigator.clipboard.writeText(hashValue)
+        log('📋 InfoHash copied to clipboard!')
+      } catch (err) {
+        log('❌ Failed to copy hash')
+      }
+    }
+
+    async function copyLink() {
+      const link = document.getElementById('shareLink').value
+      try {
+        await navigator.clipboard.writeText(link)
+        log('🔗 Link copied to clipboard!')
+      } catch (err) {
+        log('❌ Failed to copy link')
+      }
+    }
+
+    // Format bytes helper
+    function formatBytes(bytes) {
+      if (bytes === 0) return '0 B'
+      const k = 1024
+      const sizes = ['B', 'KB', 'MB', 'GB']
+      const i = Math.floor(Math.log(bytes) / Math.log(k))
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+    }
+
+    // Update stats
+    async function updateStats() {
+      try {
+        const res = await fetch('/api/stats')
+        const stats = await res.json()
+        document.getElementById('torrentCount').textContent = stats.torrents
+        document.getElementById('peerCount').textContent = stats.peers
+        document.getElementById('announceCount').textContent = stats.announces
+      } catch (err) {
+        console.warn('Failed to update stats:', err)
+      }
+    }
+
+    function renderQR(text) {
+      const container = document.getElementById('qrContainer')
+      container.innerHTML = ''
+      QRCode.toString(text, { type: 'svg', width: 140, margin: 1, errorCorrectionLevel: 'M' })
+        .then(svg => {
+          container.innerHTML = svg
+        })
+        .catch(err => {
+          log(`❌ QR render error: ${err.message}`)
+        })
+    }
+
+    function showMinimalPreview(torrent) {
+      const preview = document.getElementById('preview')
+      const wrap = document.getElementById('previewContent')
+      if (!torrent.files || torrent.files.length === 0) return
+      const file = torrent.files[0]
+      preview.style.display = 'block'
+      wrap.innerHTML = ''
+      file.blob()
+        .then(blob => {
+          const url = URL.createObjectURL(blob)
+          const type = file._getMimeType ? file._getMimeType() : (blob.type || '')
+          if (type.startsWith('image/')) {
+            const img = document.createElement('img')
+            img.src = url
+            img.alt = file.name
+            wrap.appendChild(img)
+          } else if (type.startsWith('video/')) {
+            const video = document.createElement('video')
+            video.controls = true
+            video.src = url
+            wrap.appendChild(video)
+          } else if (type.startsWith('audio/')) {
+            const audio = document.createElement('audio')
+            audio.controls = true
+            audio.src = url
+            wrap.appendChild(audio)
+          } else if (type.startsWith('text/') || file.name.endsWith('.md') || file.name.endsWith('.txt')) {
+            const iframe = document.createElement('iframe')
+            iframe.src = url
+            iframe.style.height = '220px'
+            wrap.appendChild(iframe)
+          } else {
+            const p = document.createElement('div')
+            p.className = 'muted'
+            p.textContent = 'Preview not available for this file type.'
+            wrap.appendChild(p)
+          }
+          // Revoke later
+          setTimeout(() => URL.revokeObjectURL(url), 1_000_000)
+        })
+        .catch(err => log(`❌ Preview error: ${err.message}`))
+    }
+
+    // Initialize
+    log('Client initialized')
+    log(`Tracker: ${trackerUrl}`)
+
+    // Update stats every 5 seconds
+    updateStats()
+    setInterval(updateStats, 5000)
+
+    // Log client events
+    client.on('error', (err) => log(`❌ Client error: ${err.message}`))
+    client.on('torrent', (torrent) => log(`➕ Added torrent: ${torrent.infoHash}`))
+
+    // Bind UI events
+    document.getElementById('shareBtn').addEventListener('click', shareFile)
+    document.getElementById('downloadBtn').addEventListener('click', downloadFile)
+    document.getElementById('copyHashBtn').addEventListener('click', copyHash)
+    document.getElementById('copyLinkBtn').addEventListener('click', copyLink)
+
+    // Dropzone interactions
+    const dropzone = document.getElementById('dropzone')
+    const fileInput = document.getElementById('fileInput')
+    dropzone.addEventListener('click', () => fileInput.click())
+    dropzone.addEventListener('dragover', (e) => {
+      e.preventDefault()
+      dropzone.classList.add('dragover')
+    })
+    dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'))
+    dropzone.addEventListener('drop', (e) => {
+      e.preventDefault()
+      dropzone.classList.remove('dragover')
+      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
+        fileInput.files = e.dataTransfer.files
+      }
+    })
+
+    // Auto-download if hash is present in URL
+    const initialHash = (location.hash || '').replace('#', '').trim()
+    if (initialHash) {
+      const hashInput = document.getElementById('hashInput')
+      hashInput.value = initialHash
+      downloadFile()
+    }
+  </script>
+</body>
+
+</html>
