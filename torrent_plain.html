@@ -571,7 +571,13 @@
       dropzone.classList.remove('dragover')
       if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
         fileInput.files = e.dataTransfer.files
+        // Auto-start share after drop
+        shareFile()
       }
+    })
+    // Auto-start share when a file is selected via picker
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files && fileInput.files[0]) shareFile()
     })
 
     // Auto-download if hash is present in URL
