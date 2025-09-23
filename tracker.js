@@ -65,7 +65,7 @@ class GenericWebTorrentServer {
       if (wsAddr) console.log(`📡 WebSocket: ws://${wsAddr.address}:${wsAddr.port}`)
       if (udpAddr) console.log(`📡 UDP: udp://${udpAddr.address}:${udpAddr.port}`)
       if (httpAddr) console.log(`📡 HTTP: http://${httpAddr.address}:${httpAddr.port}/announce`)
-      console.log(`🌐 Web Interface: http://${this.config.publicHostname}:${this.config.port}/share`)
+      console.log(`🌐 Web Interface: http://${this.config.publicHostname}:${this.config.port}`)
     })
 
     // Track activity for stats
@@ -90,7 +90,7 @@ class GenericWebTorrentServer {
       const url = new URL(req.url, `http://${req.headers.host}`)
       const pathname = url.pathname
 
-      if (pathname === '/share') {
+      if (pathname === '/') {
         this.serveStaticFile(req, res, 'torrent.html', 'text/html')
       } else if (pathname === '/api/stats') {
         this.serveStats(req, res)
@@ -246,7 +246,7 @@ Examples:
   node tracker.js --bind 0.0.0.0     # Bind to all interfaces
   node tracker.js --host my.sslip.io # Public hostname for links
 
-Web Interface: http://localhost:8080/share
+Web Interface: http://localhost:8080
         `)
         process.exit(0)
     }
