@@ -226,7 +226,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       case '--help':
       case '-h':
         console.log(`
-Generic WebTorrent P2P Server
+WebTorrent P2P Server
 
 Usage: node tracker.js [options]
 

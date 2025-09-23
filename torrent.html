@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WebTorrent P2P File Sharing</title>
+  <title>Secure Fast-track - Encrypted P2P File Sharing</title>
   <style>
     * {
       box-sizing: border-box;
@@ -13,7 +13,7 @@
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       background: #f7f1d6;
       min-height: 100vh;
       color: #2b2b2b;
@@ -40,11 +40,7 @@
       font-size: 1.6rem;
     }
 
-    .section {
-      margin: 12px 0;
-    }
-
-    .section h2 {
+    h2 {
       margin-bottom: 10px;
       color: #6b4ca5;
       font-size: 1.05rem;
@@ -85,12 +81,6 @@
       cursor: not-allowed;
     }
 
-    textarea {
-      background: #fffef8;
-      color: #2b2b2b;
-      resize: vertical;
-    }
-
     .progress {
       width: 100%;
       height: 8px;
@@ -103,13 +93,6 @@
       height: 100%;
       background: linear-gradient(90deg, #6b4ca5, #e67e22);
       transition: width 0.3s;
-    }
-
-    .peer-count {
-      background: #efe4bf;
-      padding: 8px;
-      border-radius: 4px;
-      margin: 8px 0;
     }
 
     .stats {
@@ -134,7 +117,6 @@
       font-size: 14px;
       max-height: 200px;
       overflow-y: auto;
-      border: 1px solid #efe4bf;
     }
 
     .hash {
@@ -143,7 +125,6 @@
       padding: 10px;
       border-radius: 4px;
       font-family: monospace;
-      border: 1px solid #efe4bf;
     }
 
     .muted {
@@ -180,40 +161,53 @@
       border-color: #a78b3b;
     }
 
+    .password-display {
+      background: #fff2cc;
+      padding: 12px;
+      border-radius: 8px;
+      border: 2px solid #e6c200;
+      margin: 12px 0;
+    }
+
+    .password-display .warning {
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+
+    .password-display .password {
+      font-family: monospace;
+      font-size: 18px;
+      font-weight: bold;
+      color: #d68910;
+    }
+
+    .password-display .note {
+      margin-top: 4px;
+      font-size: 13px;
+    }
+
+    #preview img,
+    #preview video,
+    #preview audio,
+    #preview iframe {
+      max-width: 100%;
+      border-radius: 8px;
+      border: 1px solid #efe4bf;
+    }
+
     #qrContainer svg {
       width: 140px;
       height: 140px;
       display: block;
       margin: 8px auto 0;
     }
-
-    #preview {
-      display: grid;
-      gap: 8px;
-    }
-
-    #preview img {
-      max-width: 100%;
-      height: auto;
-      border-radius: 8px;
-      border: 1px solid #efe4bf;
-    }
-
-    #preview video,
-    #preview audio,
-    #preview iframe {
-      width: 100%;
-      border-radius: 8px;
-      border: 1px solid #efe4bf;
-      background: #fffef8;
-    }
   </style>
 </head>
 
 <body>
   <div class="container">
-    <h1>Fast-track</h1>
-    <h2 style="text-align: center; font-size:medium; font-weight: normal;">Webtorrent P2P file sharing</h2>
+    <h1>🔒 Secure Fast-track</h1>
+    <h2 style="text-align: center; font-size: medium; font-weight: normal;">Encrypted P2P file sharing</h2>
 
     <div class="card">
       <div class="stats" id="stats">
@@ -233,71 +227,75 @@
     </div>
 
     <div class="card">
-      <div class="section">
-        <h2>Share</h2>
-        <div id="dropzone" class="dropzone">
-          Drop file here or click to select
+      <h2>Share Encrypted File</h2>
+      <div id="dropzone" class="dropzone">Drop file here or click to select</div>
+      <input type="file" id="fileInput" accept="*/*">
+      <button id="shareBtn">Encrypt & Share File</button>
+
+      <div id="shareProgress" style="display:none;">
+        <div class="progress">
+          <div class="progress-bar" id="shareProgressBar"></div>
         </div>
-        <input type="file" id="fileInput" accept="*/*">
+        <div id="shareStatus"></div>
+      </div>
+
+      <div id="passwordSection" style="display:none;">
+        <div class="password-display">
+          <div class="warning">⚠️ Share this password securely:</div>
+          <div id="encryptionPassword" class="password"></div>
+          <div class="muted note">The recipient needs this password to decrypt the file</div>
+        </div>
+      </div>
+
+      <div id="shareHash" style="display:none;">
+        <h3 class="muted">InfoHash</h3>
+        <div class="hash" id="hashValue"></div>
+        <h3 class="muted" style="margin-top:8px">Share Link</h3>
         <div class="row">
-          <button id="shareBtn">Seed selected file</button>
-          <span class="muted" style="margin-left:8px">Tracker will appear when ready</span>
+          <input id="shareLink" readonly>
+          <button id="copyLinkBtn" style="min-width:120px">Copy Link</button>
         </div>
-        <div id="shareProgress" style="display:none;">
-          <div class="progress">
-            <div class="progress-bar" id="shareProgressBar"></div>
-          </div>
-          <div id="shareStatus"></div>
-        </div>
-        <div id="shareHash" style="display:none;">
-          <h3 class="muted">InfoHash</h3>
-          <div class="hash" id="hashValue"></div>
-          <h3 class="muted" style="margin-top:8px">Open link / QR</h3>
-          <div class="row">
-            <input id="shareLink" readonly>
-            <button id="copyLinkBtn" style="min-width:120px">Copy link</button>
-          </div>
-          <div id="qrContainer" aria-label="QR code"></div>
-          <button id="copyHashBtn" style="margin-top:8px">Copy hash</button>
-        </div>
+        <div id="qrContainer"></div>
+        <button id="copyHashBtn" style="margin-top:8px">Copy Hash</button>
       </div>
     </div>
 
     <div class="card">
-      <div class="section">
-        <h2>Download</h2>
-        <textarea id="hashInput" placeholder="Paste InfoHash or use #hash in URL" rows="2"></textarea>
-        <button id="downloadBtn">Download File</button>
-        <div id="downloadProgress" style="display:none;">
-          <div class="progress">
-            <div class="progress-bar" id="downloadProgressBar"></div>
-          </div>
-          <div id="downloadStatus"></div>
-          <div id="peerInfo" class="peer-count"></div>
+      <h2>Download & Decrypt File</h2>
+      <textarea id="hashInput" placeholder="Paste InfoHash or use #hash in URL" rows="2"></textarea>
+      <input type="password" id="passwordInput" placeholder="Enter decryption password">
+      <button id="downloadBtn">Download & Decrypt File</button>
+
+      <div id="downloadProgress" style="display:none;">
+        <div class="progress">
+          <div class="progress-bar" id="downloadProgressBar"></div>
         </div>
-        <div id="preview" class="section" style="display:none;">
-          <h3 class="muted">Preview</h3>
-          <div id="previewContent"></div>
-        </div>
+        <div id="downloadStatus"></div>
+        <div id="peerInfo" style="background: #efe4bf; padding: 8px; border-radius: 4px; margin: 8px 0;"></div>
+      </div>
+
+      <div id="preview" style="display:none;">
+        <h3 class="muted">Decrypted File Preview</h3>
+        <div id="previewContent"></div>
       </div>
     </div>
 
     <div class="card">
-      <div class="section">
-        <h2>Activity</h2>
-        <div id="log" class="log"></div>
-      </div>
+      <h2>Activity Log</h2>
+      <div id="log" class="log"></div>
     </div>
   </div>
 
   <script type="module">
     import WebTorrent from 'https://esm.sh/webtorrent@2.8.4/dist/webtorrent.min.js'
     import QRCode from 'https://esm.sh/qrcode@1.5.3'
+    import { xchacha20poly1305 } from 'https://esm.sh/@noble/ciphers@2.0.0/chacha.js'
+    import { randomBytes } from 'https://esm.sh/@noble/ciphers@2.0.0/utils.js'
+    import { scrypt } from 'https://esm.sh/@noble/hashes@1.6.1/scrypt.js'
 
     const client = new WebTorrent()
     let currentTorrent = null
 
-    // Get tracker URLs
     const wsScheme = location.protocol === 'https:' ? 'wss' : 'ws'
     const trackerUrl = `${wsScheme}://${location.host}/announce`
 
@@ -309,39 +307,122 @@
       console.log(message)
     }
 
-    // Share file function
+    function generatePassword() {
+      const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+      let password = ''
+      for (let i = 0; i < 12; i++) {
+        password += chars.charAt(Math.floor(Math.random() * chars.length))
+      }
+      return password
+    }
+
+    async function deriveKey(password, salt) {
+      return scrypt(password, salt, { N: 2 ** 16, r: 8, p: 1, dkLen: 32 })
+    }
+
+    async function encryptFile(file, password) {
+      const salt = randomBytes(32)
+      const key = await deriveKey(password, salt)
+
+      const metadata = {
+        originalName: file.name,
+        originalSize: file.size,
+        mimeType: file.type,
+        uploadDate: new Date().toISOString()
+      }
+
+      const fileBuffer = await file.arrayBuffer()
+      const fileData = new Uint8Array(fileBuffer)
+
+      const metadataStr = JSON.stringify(metadata)
+      const metadataBytes = new TextEncoder().encode(metadataStr)
+      const metadataNonce = randomBytes(24)
+      const metadataCipher = xchacha20poly1305(key, metadataNonce)
+      const encryptedMetadata = metadataCipher.encrypt(metadataBytes)
+
+      const dataNonce = randomBytes(24)
+      const dataCipher = xchacha20poly1305(key, dataNonce)
+      const encryptedData = dataCipher.encrypt(fileData)
+
+      const metadataLength = new Uint32Array([encryptedMetadata.length])
+      const metadataLengthBytes = new Uint8Array(metadataLength.buffer)
+
+      const combinedData = new Uint8Array(
+        salt.length + metadataNonce.length + 4 + encryptedMetadata.length + dataNonce.length + encryptedData.length
+      )
+
+      let offset = 0
+      combinedData.set(salt, offset); offset += salt.length
+      combinedData.set(metadataNonce, offset); offset += metadataNonce.length
+      combinedData.set(metadataLengthBytes, offset); offset += 4
+      combinedData.set(encryptedMetadata, offset); offset += encryptedMetadata.length
+      combinedData.set(dataNonce, offset); offset += dataNonce.length
+      combinedData.set(encryptedData, offset)
+
+      const extension = file.name.includes('.') ? file.name.split('.').pop() : 'bin'
+      const obfuscatedName = `encrypted_${Date.now()}.${extension}`
+
+      return { encryptedBlob: new Blob([combinedData]), obfuscatedName }
+    }
+
+    async function decryptFile(encryptedData, password) {
+      const data = new Uint8Array(await encryptedData.arrayBuffer())
+
+      let offset = 0
+      const salt = data.slice(offset, offset + 32); offset += 32
+      const metadataNonce = data.slice(offset, offset + 24); offset += 24
+      const metadataLengthBytes = data.slice(offset, offset + 4); offset += 4
+      const metadataLength = new Uint32Array(metadataLengthBytes.buffer)[0]
+      const encryptedMetadata = data.slice(offset, offset + metadataLength); offset += metadataLength
+      const dataNonce = data.slice(offset, offset + 24); offset += 24
+      const encryptedFileData = data.slice(offset)
+
+      const key = await deriveKey(password, salt)
+
+      const metadataCipher = xchacha20poly1305(key, metadataNonce)
+      const decryptedMetadataBytes = metadataCipher.decrypt(encryptedMetadata)
+      const metadataStr = new TextDecoder().decode(decryptedMetadataBytes)
+      const metadata = JSON.parse(metadataStr)
+
+      const dataCipher = xchacha20poly1305(key, dataNonce)
+      const decryptedFileData = dataCipher.decrypt(encryptedFileData)
+
+      return {
+        data: new Blob([decryptedFileData], { type: metadata.mimeType }),
+        metadata
+      }
+    }
+
     async function shareFile() {
       const fileInput = document.getElementById('fileInput')
       const file = fileInput.files[0]
-
-      if (!file) {
-        alert('Please select a file first!')
-        return
-      }
+      if (!file) return alert('Please select a file first!')
 
       const shareBtn = document.getElementById('shareBtn')
       shareBtn.disabled = true
-      shareBtn.textContent = 'Creating torrent...'
+      shareBtn.textContent = 'Encrypting file...'
 
       try {
-        const opts = {
-          announce: [trackerUrl],
-          name: file.name
-        }
+        const password = generatePassword()
+        log(`Generated encryption password: ${password}`)
 
-        const torrent = client.seed(file, opts)
+        document.getElementById('encryptionPassword').textContent = password
+        document.getElementById('passwordSection').style.display = 'block'
+
+        shareBtn.textContent = 'Creating encrypted torrent...'
+        const { encryptedBlob, obfuscatedName } = await encryptFile(file, password)
+
+        const torrent = client.seed(encryptedBlob, { announce: [trackerUrl], name: obfuscatedName })
         currentTorrent = torrent
-
         document.getElementById('shareProgress').style.display = 'block'
 
         torrent.on('ready', () => {
           document.getElementById('hashValue').textContent = torrent.infoHash
           document.getElementById('shareHash').style.display = 'block'
           const link = `${location.origin}${location.pathname}#${torrent.infoHash}`
-          const shareLinkEl = document.getElementById('shareLink')
-          shareLinkEl.value = link
+          document.getElementById('shareLink').value = link
           renderQR(link)
-          log(`✅ Sharing: ${file.name} (InfoHash: ${torrent.infoHash})`)
+          log(`Sharing encrypted: ${file.name} -> ${obfuscatedName} (${torrent.infoHash})`)
         })
 
         torrent.on('upload', () => {
@@ -349,120 +430,148 @@
             `Uploaded: ${formatBytes(torrent.uploaded)} | Peers: ${torrent.numPeers}`
         })
 
-        torrent.on('wire', () => {
-          log(`🔗 New peer connected. Total peers: ${torrent.numPeers}`)
-        })
-
-        torrent.on('error', (err) => {
-          log(`❌ Torrent error: ${err.message}`)
-        })
+        torrent.on('wire', () => log(`New peer connected. Total: ${torrent.numPeers}`))
+        torrent.on('error', (err) => log(`Torrent error: ${err.message}`))
 
       } catch (error) {
-        log(`❌ Error sharing file: ${error.message}`)
+        log(`Error: ${error.message}`)
+        alert(`Error: ${error.message}`)
       } finally {
         shareBtn.disabled = false
-        shareBtn.textContent = 'Share File'
+        shareBtn.textContent = 'Encrypt & Share File'
       }
     }
 
-    // Download file function  
     async function downloadFile() {
       const hashInput = document.getElementById('hashInput')
+      const passwordInput = document.getElementById('passwordInput')
       const infoHash = hashInput.value.trim()
+      const password = passwordInput.value.trim()
 
-      if (!infoHash) {
-        alert('Please enter an InfoHash!')
-        return
-      }
+      if (!infoHash) return alert('Please enter an InfoHash!')
+      if (!password) return alert('Please enter the decryption password!')
 
       const downloadBtn = document.getElementById('downloadBtn')
       downloadBtn.disabled = true
       downloadBtn.textContent = 'Connecting...'
 
       try {
-        const opts = {
-          announce: [trackerUrl]
-        }
-
-        const torrent = client.add(infoHash, opts)
+        const torrent = client.add(infoHash, { announce: [trackerUrl] })
         currentTorrent = torrent
-
         document.getElementById('downloadProgress').style.display = 'block'
-        log(`🔍 Looking for: ${infoHash}`)
+        log(`Looking for: ${infoHash}`)
 
         torrent.on('metadata', () => {
-          log(`📋 Found metadata: ${torrent.name} (${formatBytes(torrent.length)})`)
+          log(`Found encrypted file: ${torrent.name} (${formatBytes(torrent.length)})`)
         })
 
-        torrent.on('ready', () => {
-          log(`✅ Ready to download: ${torrent.name}`)
-          showMinimalPreview(torrent)
-        })
+        torrent.on('ready', () => log(`Ready to download: ${torrent.name}`))
 
         torrent.on('download', () => {
           const progress = Math.round(torrent.progress * 100)
           document.getElementById('downloadProgressBar').style.width = progress + '%'
           document.getElementById('downloadStatus').innerHTML =
-            `Progress: ${progress}% | Downloaded: ${formatBytes(torrent.downloaded)} / ${formatBytes(torrent.length)} | Speed: ${formatBytes(torrent.downloadSpeed)}/s`
+            `Progress: ${progress}% | ${formatBytes(torrent.downloaded)} / ${formatBytes(torrent.length)} | ${formatBytes(torrent.downloadSpeed)}/s`
         })
 
         torrent.on('wire', () => {
           document.getElementById('peerInfo').textContent = `Connected to ${torrent.numPeers} peers`
         })
 
-        torrent.on('done', () => {
-          log(`🎉 Download complete: ${torrent.name}`)
-          // Auto-download the file
-          const file = torrent.files[0]
-          file.blob()
-            .then((blob) => {
-              const url = URL.createObjectURL(blob)
-              const a = document.createElement('a')
-              a.href = url
-              a.download = file.name
-              a.click()
-              // Revoke the object URL after a short delay to free memory
-              setTimeout(() => URL.revokeObjectURL(url), 1_000_000)
-            })
-            .catch((err) => {
-              log(`❌ Error creating download link: ${err.message}`)
-            })
+        torrent.on('done', async () => {
+          log('Download complete, decrypting...')
+          downloadBtn.textContent = 'Decrypting...'
+
+          try {
+            const file = torrent.files[0]
+            const encryptedBlob = await file.blob()
+            const { data: decryptedBlob, metadata } = await decryptFile(encryptedBlob, password)
+
+            const url = URL.createObjectURL(decryptedBlob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = metadata.originalName
+            a.click()
+
+            log(`Decrypted: ${metadata.originalName} (${formatBytes(metadata.originalSize)})`)
+            log(`Upload date: ${new Date(metadata.uploadDate).toLocaleString()}`)
+
+            showDecryptedPreview(decryptedBlob, metadata)
+            setTimeout(() => URL.revokeObjectURL(url), 1000000)
+
+          } catch (decryptError) {
+            log(`Decryption failed: ${decryptError.message}`)
+            alert(`Decryption failed. Please check your password.`)
+          }
         })
 
-        torrent.on('error', (err) => {
-          log(`❌ Download error: ${err.message}`)
-        })
+        torrent.on('error', (err) => log(`Download error: ${err.message}`))
 
       } catch (error) {
-        log(`❌ Error adding torrent: ${error.message}`)
+        log(`Error: ${error.message}`)
       } finally {
         downloadBtn.disabled = false
-        downloadBtn.textContent = 'Download File'
+        downloadBtn.textContent = 'Download & Decrypt File'
       }
     }
 
-    // Copy hash function
+    function showDecryptedPreview(blob, metadata) {
+      const preview = document.getElementById('preview')
+      const wrap = document.getElementById('previewContent')
+
+      preview.style.display = 'block'
+      wrap.innerHTML = ''
+
+      const url = URL.createObjectURL(blob)
+      const type = metadata.mimeType || ''
+
+      if (type.startsWith('image/')) {
+        const img = document.createElement('img')
+        img.src = url
+        img.alt = metadata.originalName
+        wrap.appendChild(img)
+      } else if (type.startsWith('video/')) {
+        const video = document.createElement('video')
+        video.controls = true
+        video.src = url
+        wrap.appendChild(video)
+      } else if (type.startsWith('audio/')) {
+        const audio = document.createElement('audio')
+        audio.controls = true
+        audio.src = url
+        wrap.appendChild(audio)
+      } else if (type.startsWith('text/')) {
+        const iframe = document.createElement('iframe')
+        iframe.src = url
+        iframe.style.height = '220px'
+        wrap.appendChild(iframe)
+      } else {
+        const info = document.createElement('div')
+        info.className = 'muted'
+        info.innerHTML = `
+          <strong>File:</strong> ${metadata.originalName}<br>
+          <strong>Size:</strong> ${formatBytes(metadata.originalSize)}<br>
+          <strong>Type:</strong> ${metadata.mimeType || 'Unknown'}<br>
+          <strong>Uploaded:</strong> ${new Date(metadata.uploadDate).toLocaleString()}
+        `
+        wrap.appendChild(info)
+      }
+
+      setTimeout(() => URL.revokeObjectURL(url), 1000000)
+    }
+
     async function copyHash() {
       const hashValue = document.getElementById('hashValue').textContent
-      try {
-        await navigator.clipboard.writeText(hashValue)
-        log('📋 InfoHash copied to clipboard!')
-      } catch (err) {
-        log('❌ Failed to copy hash')
-      }
+      await navigator.clipboard.writeText(hashValue)
+      log('InfoHash copied to clipboard!')
     }
 
     async function copyLink() {
       const link = document.getElementById('shareLink').value
-      try {
-        await navigator.clipboard.writeText(link)
-        log('🔗 Link copied to clipboard!')
-      } catch (err) {
-        log('❌ Failed to copy link')
-      }
+      await navigator.clipboard.writeText(link)
+      log('Link copied to clipboard!')
     }
 
-    // Format bytes helper
     function formatBytes(bytes) {
       if (bytes === 0) return '0 B'
       const k = 1024
@@ -471,7 +580,6 @@
       return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
     }
 
-    // Update stats
     async function updateStats() {
       try {
         const res = await fetch('/api/stats')
@@ -479,85 +587,30 @@
         document.getElementById('torrentCount').textContent = stats.torrents
         document.getElementById('peerCount').textContent = stats.peers
         document.getElementById('announceCount').textContent = stats.announces
-      } catch (err) {
-        console.warn('Failed to update stats:', err)
-      }
+      } catch (err) { }
     }
 
     function renderQR(text) {
       const container = document.getElementById('qrContainer')
       container.innerHTML = ''
       QRCode.toString(text, { type: 'svg', width: 140, margin: 1, errorCorrectionLevel: 'M' })
-        .then(svg => {
-          container.innerHTML = svg
-        })
-        .catch(err => {
-          log(`❌ QR render error: ${err.message}`)
-        })
-    }
-
-    function showMinimalPreview(torrent) {
-      const preview = document.getElementById('preview')
-      const wrap = document.getElementById('previewContent')
-      if (!torrent.files || torrent.files.length === 0) return
-      const file = torrent.files[0]
-      preview.style.display = 'block'
-      wrap.innerHTML = ''
-      file.blob()
-        .then(blob => {
-          const url = URL.createObjectURL(blob)
-          const type = file._getMimeType ? file._getMimeType() : (blob.type || '')
-          if (type.startsWith('image/')) {
-            const img = document.createElement('img')
-            img.src = url
-            img.alt = file.name
-            wrap.appendChild(img)
-          } else if (type.startsWith('video/')) {
-            const video = document.createElement('video')
-            video.controls = true
-            video.src = url
-            wrap.appendChild(video)
-          } else if (type.startsWith('audio/')) {
-            const audio = document.createElement('audio')
-            audio.controls = true
-            audio.src = url
-            wrap.appendChild(audio)
-          } else if (type.startsWith('text/') || file.name.endsWith('.md') || file.name.endsWith('.txt')) {
-            const iframe = document.createElement('iframe')
-            iframe.src = url
-            iframe.style.height = '220px'
-            wrap.appendChild(iframe)
-          } else {
-            const p = document.createElement('div')
-            p.className = 'muted'
-            p.textContent = 'Preview not available for this file type.'
-            wrap.appendChild(p)
-          }
-          // Revoke later
-          setTimeout(() => URL.revokeObjectURL(url), 1_000_000)
-        })
-        .catch(err => log(`❌ Preview error: ${err.message}`))
+        .then(svg => container.innerHTML = svg)
+        .catch(err => log(`QR render error: ${err.message}`))
     }
 
     // Initialize
-    log('Client initialized')
+    log('Encrypted WebTorrent client initialized')
     log(`Tracker: ${trackerUrl}`)
-
-    // Update stats every 5 seconds
     updateStats()
     setInterval(updateStats, 5000)
 
-    // Log client events
-    client.on('error', (err) => log(`❌ Client error: ${err.message}`))
-    client.on('torrent', (torrent) => log(`➕ Added torrent: ${torrent.infoHash}`))
-
-    // Bind UI events
+    // Event bindings
     document.getElementById('shareBtn').addEventListener('click', shareFile)
     document.getElementById('downloadBtn').addEventListener('click', downloadFile)
     document.getElementById('copyHashBtn').addEventListener('click', copyHash)
     document.getElementById('copyLinkBtn').addEventListener('click', copyLink)
 
-    // Dropzone interactions
+    // Dropzone
     const dropzone = document.getElementById('dropzone')
     const fileInput = document.getElementById('fileInput')
     dropzone.addEventListener('click', () => fileInput.click())
@@ -569,18 +622,15 @@
     dropzone.addEventListener('drop', (e) => {
       e.preventDefault()
       dropzone.classList.remove('dragover')
-      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
-        fileInput.files = e.dataTransfer.files
-      }
+      if (e.dataTransfer?.files?.[0]) fileInput.files = e.dataTransfer.files
     })
 
-    // Auto-download if hash is present in URL
-    const initialHash = (location.hash || '').replace('#', '').trim()
-    if (initialHash) {
-      const hashInput = document.getElementById('hashInput')
-      hashInput.value = initialHash
-      downloadFile()
-    }
+    // Auto-download if hash in URL
+    const initialHash = location.hash.replace('#', '').trim()
+    if (initialHash) document.getElementById('hashInput').value = initialHash
+
+    client.on('error', (err) => log(`Client error: ${err.message}`))
+    client.on('torrent', (torrent) => log(`Added torrent: ${torrent.infoHash}`))
   </script>
 </body>
 
