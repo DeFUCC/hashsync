@@ -61,6 +61,7 @@ class GenericWebTorrentServer {
       const httpAddr = this.tracker.http?.address()
 
       console.log('🚀 Generic WebTorrent Server running!')
+      console.log(`🔒 Bound on: ${this.config.bindAddress} (internal) | Public: ${this.config.publicHostname}`)
       if (wsAddr) console.log(`📡 WebSocket: ws://${wsAddr.address}:${wsAddr.port}`)
       if (udpAddr) console.log(`📡 UDP: udp://${udpAddr.address}:${udpAddr.port}`)
       if (httpAddr) console.log(`📡 HTTP: http://${httpAddr.address}:${httpAddr.port}/announce`)
@@ -166,7 +167,11 @@ class GenericWebTorrentServer {
         }
       })
 
-      this.tracker.listen(this.config.port, this.config.bindAddress, (err) => {
+      const listenHost = (this.config.bindAddress === '0.0.0.0' || this.config.bindAddress === '::' || !this.config.bindAddress)
+        ? undefined
+        : this.config.bindAddress
+
+      this.tracker.listen(this.config.port, listenHost, (err) => {
         if (err) {
           console.error(`❌ Failed to start server: ${err.message}`)
           if (err.code === 'EADDRINUSE') {
