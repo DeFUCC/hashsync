@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Secure Fast-track - Encrypted P2P File Sharing</title>
+  <title>HashSync - Encrypted P2P File Sharing</title>
   <style>
     * {
       box-sizing: border-box;
@@ -206,7 +206,7 @@
 
 <body>
   <div class="container">
-    <h1>🔒 Secure Fast-track</h1>
+    <h1>🔒 HashSync</h1>
     <h2 style="text-align: center; font-size: medium; font-weight: normal;">Encrypted P2P file sharing</h2>
 
     <div class="card">
@@ -288,7 +288,7 @@
 
   <script type="module">
     import WebTorrent from 'https://esm.sh/webtorrent@2.8.4/dist/webtorrent.min.js'
-    import QRCode from 'https://esm.sh/qrcode@1.5.3'
+    import QRCode from 'https://esm.sh/qr@0.5.2'
     import { xchacha20poly1305 } from 'https://esm.sh/@noble/ciphers@2.0.0/chacha.js'
     import { randomBytes } from 'https://esm.sh/@noble/ciphers@2.0.0/utils.js'
     import { scrypt } from 'https://esm.sh/@noble/hashes@1.6.1/scrypt.js'
@@ -593,9 +593,8 @@
     function renderQR(text) {
       const container = document.getElementById('qrContainer')
       container.innerHTML = ''
-      QRCode.toString(text, { type: 'svg', width: 140, margin: 1, errorCorrectionLevel: 'M' })
-        .then(svg => container.innerHTML = svg)
-        .catch(err => log(`QR render error: ${err.message}`))
+      container.innerHTML = QRCode(text, 'svg')
+
     }
 
     // Initialize
