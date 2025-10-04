@@ -91,7 +91,7 @@ class GenericWebTorrentServer {
       const pathname = url.pathname
 
       if (pathname === '/') {
-        this.serveStaticFile(req, res, 'torrent.html', 'text/html')
+        this.serveStaticFile(req, res, 'nostr-file-sync.html', 'text/html')
       } else if (pathname === '/api/stats') {
         this.serveStats(req, res)
       } else {

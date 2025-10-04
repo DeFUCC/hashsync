@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nostr File Sync</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #fef5e7 0%, #fadbd8 100%);
+      min-height: 100vh;
+      color: #2c3e50;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px;
+      margin: 15px 0;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+      text-align: center;
+      color: #d35400;
+      margin-bottom: 10px;
+      font-size: 2rem;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #7f8c8d;
+      margin-bottom: 20px;
+      font-size: 0.95rem;
+    }
+
+    input,
+    button,
+    textarea {
+      width: 100%;
+      padding: 12px;
+      margin: 8px 0;
+      border: 2px solid #ecf0f1;
+      border-radius: 8px;
+      font-size: 15px;
+      background: #fdfefe;
+    }
+
+    input:focus,
+    textarea:focus {
+      outline: none;
+      border-color: #e67e22;
+    }
+
+    button {
+      background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    button:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(230, 126, 34, 0.3);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    button.secondary {
+      background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%);
+    }
+
+    .identity-box {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      padding: 15px;
+      background: #fff8e7;
+      border-radius: 8px;
+      border: 2px solid #f39c12;
+    }
+
+    .npub-display {
+      flex: 1;
+      font-family: monospace;
+      font-size: 13px;
+      word-break: break-all;
+      color: #e67e22;
+      font-weight: 600;
+    }
+
+    .file-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 15px;
+      margin: 10px 0;
+      background: #ecf0f1;
+      border-radius: 8px;
+      border-left: 4px solid #3498db;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .file-item:hover {
+      background: #d5dbdb;
+    }
+
+    .file-info {
+      flex: 1;
+      cursor: pointer;
+    }
+
+    .file-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .delete-btn {
+      background: #e74c3c;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      transition: background 0.2s;
+    }
+
+    .file-name {
+      font-weight: 600;
+      color: #2c3e50;
+      margin-bottom: 5px;
+    }
+
+    .file-meta {
+      font-size: 13px;
+      color: #7f8c8d;
+    }
+
+    .status {
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    .status.info {
+      background: #d6eaf8;
+      color: #1f618d;
+    }
+
+    .status.success {
+      background: #d5f4e6;
+      color: #0e6655;
+    }
+
+    .status.error {
+      background: #fadbd8;
+      color: #943126;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .progress {
+      width: 100%;
+      height: 6px;
+      background: #ecf0f1;
+      border-radius: 3px;
+      overflow: hidden;
+      margin: 10px 0;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #3498db, #e67e22);
+      transition: width 0.3s;
+    }
+
+    .dropzone {
+      border: 3px dashed #bdc3c7;
+      background: #fef9f3;
+      border-radius: 12px;
+      padding: 40px;
+      text-align: center;
+      color: #7f8c8d;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .dropzone:hover {
+      background: #fef5e7;
+      border-color: #95a5a6;
+    }
+
+    .dropzone.dragover {
+      background: #fff3e0;
+      border-color: #e67e22;
+    }
+
+    .row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .tag {
+      display: inline-block;
+      padding: 4px 10px;
+      background: #e8f8f5;
+      color: #16a085;
+      border-radius: 12px;
+      font-size: 12px;
+      margin: 4px;
+      font-weight: 600;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>🔐 HashSync</h1>
+    <p class="subtitle">Encrypted P2P file sharing across devices</p>
+
+    <!-- Login Section -->
+    <div id="loginSection" class="card">
+      <h2 style="color: #e67e22; margin-bottom: 20px;">Welcome to HashSync</h2>
+
+      <div style="margin-bottom: 25px;">
+        <h3 style="margin-bottom: 10px; color: #2c3e50;">New User</h3>
+        <div class="row" style="align-items: center; gap: 8px;">
+          <input type="text" id="generatedNsec" readonly
+            style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 4px;"
+            placeholder="Click 'Generate' to create a new identity">
+          <button id="generateBtn" class="secondary" style="width: 120px;">Generate</button>
+        </div>
+        <p style="font-size: 0.85em; color: #7f8c8d; margin: 5px 0 0 0;">
+          ⚠️ Save this key to log in later
+        </p>
+      </div>
+
+      <div style="text-align: center; margin: 20px 0; position: relative;">
+        <hr style="border: 0; border-top: 1px solid #eee;">
+        <span style="background: #fff; padding: 0 10px; position: relative; top: -12px; color: #7f8c8d;">or</span>
+      </div>
+
+      <div>
+        <h3 style="margin-bottom: 10px; color: #2c3e50;">Existing User</h3>
+        <div class="row" style="align-items: center; gap: 8px;">
+          <input type="password" id="nsecInput"
+            style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 4px;"
+            placeholder="Paste your nsec1... private key">
+          <button id="loginBtn" style="width: 120px;">Log In</button>
+        </div>
+        <p style="font-size: 0.85em; color: #7f8c8d; margin: 5px 0 0 0;">
+          Your key is only used locally and never sent to our servers
+        </p>
+      </div>
+
+      <div id="loginStatus" style="margin-top: 15px;"></div>
+    </div>
+
+    <!-- Identity Display (hidden initially) -->
+    <div id="identitySection" class="card hidden">
+      <div class="identity-box">
+        <div style="flex: 1;">
+          <div style="font-size: 12px; color: #7f8c8d; margin-bottom: 5px;">Logged in as:</div>
+          <div class="npub-display" id="npubDisplay"></div>
+        </div>
+        <button id="copyNpubBtn" style="width: auto; padding: 10px 20px;">Copy</button>
+        <button id="logoutBtn" class="secondary" style="width: auto; padding: 10px 20px;">Logout</button>
+      </div>
+    </div>
+
+    <!-- Share File Section -->
+    <div id="shareSection" class="card hidden">
+      <h2 style="color: #e67e22; margin-bottom: 15px;">Share File</h2>
+      <div id="dropzone" class="dropzone">Drop file here or click to select</div>
+      <input type="file" id="fileInput" style="display: none;">
+      <div id="shareStatus"></div>
+      <div id="shareProgress" class="hidden">
+        <div class="progress">
+          <div class="progress-bar" id="shareProgressBar"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- My Files Section -->
+    <div id="filesSection" class="card hidden">
+      <h2 style="color: #e67e22; margin-bottom: 15px;">My Files</h2>
+      <button id="refreshBtn">Refresh Files</button>
+      <div id="filesList"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { schnorr } from 'https://esm.sh/@noble/curves@1.6.0/secp256k1';
+    import { bytesToHex, hexToBytes, randomBytes } from 'https://esm.sh/@noble/hashes@1.6.1/utils';
+    import { sha256 } from 'https://esm.sh/@noble/hashes@1.6.1/sha256';
+    import { xchacha20poly1305 } from 'https://esm.sh/@noble/ciphers@2.0.0/chacha';
+    import { bech32 } from 'https://esm.sh/@scure/base';
+    import { scrypt } from 'https://esm.sh/@noble/hashes@1.6.1/scrypt';
+    import WebTorrent from 'https://esm.sh/webtorrent@2.8.4/dist/webtorrent.min.js';
+    // import { discoverRelays, getClosestRelays } from 'https://esm.sh/nostr-dht@latest/nostr-dht.js';
+
+    // Discover relays
+    // const relays = await discoverRelays(RELAYS);
+
+    // const npub = "npub1m2f3j22hf90mt8mw788pne6fg7c8j2mw4gd3xjsptspjdeqf05dqhr54wn";
+    // const closestRelays = await getClosestRelays(npub, relays, { n: 5 });
+
+    const client = new WebTorrent();
+    const wsScheme = location.protocol === 'https:' ? 'wss' : 'ws';
+    const trackerUrl = `${wsScheme}://${location.host}/announce`;
+    const RELAYS = ['wss://nostr.defucc.me', 'wss://relay.damus.io', 'wss://relay.snort.social', 'wss://nos.lol'];
+    const FILE_KIND = 30078;
+
+    const trackers = [trackerUrl, 'wss://tracker.openwebtorrent.com', 'wss://tracker.btorrent.xyz', 'wss://tracker.webtorrent.dev ']
+
+    fetch('https://ngosang.github.io/trackerslist/trackers_all_ws.txt')
+      .then(response => response.text())
+      .then(data => {
+        const trackers = data.split('\n').filter(line => line.startsWith('wss://'))
+        trackers.forEach(tracker => trackers.push(tracker))
+      }).catch(error => {
+        console.error('Error loading additional trackers:', error)
+      })
+
+
+
+    let state = { sk: null, pk: null, files: new Map(), sockets: [], pendingKey: null };
+
+    // Nostr helpers
+    const getPublicKey = (sk) => bytesToHex(schnorr.getPublicKey(sk));
+
+    const createEvent = (kind, content, tags = []) => {
+      const event = {
+        kind,
+        created_at: Math.floor(Date.now() / 1000),
+        tags,
+        content,
+        pubkey: state.pk
+      };
+      event.id = bytesToHex(sha256(new TextEncoder().encode(JSON.stringify([0, event.pubkey, event.created_at, event.kind, event.tags, event.content]))));
+      event.sig = bytesToHex(schnorr.sign(hexToBytes(event.id), state.sk));
+      return event;
+    };
+
+    const verifyEvent = (evt) => {
+      try {
+        const id = bytesToHex(sha256(new TextEncoder().encode(JSON.stringify([0, evt.pubkey, evt.created_at, evt.kind, evt.tags, evt.content]))));
+        return id === evt.id && schnorr.verify(hexToBytes(evt.sig), hexToBytes(evt.id), hexToBytes(evt.pubkey));
+      } catch { return false; }
+    };
+
+    const encodeNpub = (hex) => bech32.encode('npub', bech32.toWords(hexToBytes(hex)));
+
+    const decodeNsec = (nsec) => {
+      const { prefix, words } = bech32.decode(nsec);
+      if (prefix !== 'nsec') throw new Error('Invalid nsec');
+      return bytesToHex(bech32.fromWords(words));
+    };
+
+    // Crypto helpers
+    const deriveKey = (password, salt) => scrypt(password, salt, { N: 2 ** 14, r: 8, p: 1, dkLen: 32 });
+
+    const encryptFile = async (file) => {
+      const password = bytesToHex(randomBytes(16));
+      const salt = randomBytes(32);
+      const key = deriveKey(password, salt);
+      const nonce = randomBytes(24);
+      const cipher = xchacha20poly1305(key, nonce);
+      const fileData = new Uint8Array(await file.arrayBuffer());
+      const encrypted = cipher.encrypt(fileData);
+      const combined = new Uint8Array(salt.length + nonce.length + encrypted.length);
+      combined.set(salt, 0);
+      combined.set(nonce, 32);
+      combined.set(encrypted, 56);
+      return { blob: new Blob([combined]), password, name: file.name, size: file.size, type: file.type };
+    };
+
+    const decryptFile = async (encData, password) => {
+      const data = new Uint8Array(await encData.arrayBuffer());
+      const salt = data.slice(0, 32);
+      const nonce = data.slice(32, 56);
+      const encrypted = data.slice(56);
+      const key = deriveKey(password, salt);
+      const cipher = xchacha20poly1305(key, nonce);
+      return cipher.decrypt(encrypted);
+    };
+
+    // Nostr relay helpers
+    const connectRelay = (url) => {
+      const ws = new WebSocket(url);
+      state.sockets.push(ws);
+      ws.onmessage = async (e) => {
+        const [type, , evt] = JSON.parse(e.data);
+        if (type === 'EVENT') {
+          if (evt.kind === FILE_KIND && evt.pubkey === state.pk && verifyEvent(evt)) {
+            const d = evt.tags.find(t => t[0] === 'd')?.[1];
+            if (d && !state.files.has(d)) {
+              try {
+                const data = JSON.parse(evt.content);
+                state.files.set(d, { ...data, id: evt.id, created: evt.created_at });
+                renderFiles();
+              } catch { }
+            }
+          } else if (evt.kind === 5 && evt.pubkey === state.pk && verifyEvent(evt)) {
+            // Handle deletion events (NIP9)
+            const deletedEventId = evt.tags.find(t => t[0] === 'e')?.[1];
+            if (deletedEventId) {
+              // Remove from local state
+              for (const [hash, fileData] of state.files.entries()) {
+                if (fileData.id === deletedEventId) {
+                  state.files.delete(hash);
+                  // Remove from WebTorrent if seeding
+                  client.torrents.forEach(torrent => {
+                    if (torrent.infoHash === hash) {
+                      torrent.destroy(() => {
+                        console.log(`Torrent ${hash} removed due to deletion event`);
+                      });
+                    }
+                  });
+                  break;
+                }
+              }
+              renderFiles();
+            }
+          }
+        }
+      };
+      ws.onopen = () => {
+        ws.send(JSON.stringify(['REQ', 'files', { kinds: [FILE_KIND], authors: [state.pk], limit: 50 }]));
+        ws.send(JSON.stringify(['REQ', 'deletions', { kinds: [5], authors: [state.pk], limit: 50 }]));
+      };
+      return ws;
+    };
+
+    const publishEvent = (evt) => {
+      state.sockets.forEach(ws => {
+        if (ws.readyState === 1) ws.send(JSON.stringify(['EVENT', evt]));
+      });
+    };
+
+    // UI helpers
+    const showStatus = (id, msg, type = 'info') => {
+      const el = document.getElementById(id);
+      el.innerHTML = `<div class="status ${type}">${msg}</div>`;
+    };
+
+    const renderFiles = () => {
+      const list = document.getElementById('filesList');
+      if (state.files.size === 0) {
+        list.innerHTML = '<div class="status info">No files yet. Share your first file!</div>';
+        return;
+      }
+      list.innerHTML = Array.from(state.files.values())
+        .sort((a, b) => b.created - a.created)
+        .map(f => `
+          <div class="file-item" data-hash="${f.hash}" data-pass="${f.password}" data-event-id="${f.id}">
+            <div class="file-info" data-hash="${f.hash}" data-pass="${f.password}">
+              <div class="file-name">📄 ${f.name}</div>
+              <div class="file-meta">
+                ${(f.size / 1024).toFixed(1)} KB • ${new Date(f.created * 1000).toLocaleDateString()}
+                <span class="tag">${f.hash.slice(0, 8)}...</span>
+              </div>
+            </div>
+            <div class="file-actions">
+              <button class="delete-btn" data-hash="${f.hash}" data-event-id="${f.id}">🗑️ Delete</button>
+            </div>
+          </div>
+        `).join('');
+
+      // Add click handlers for file info (download)
+      list.querySelectorAll('.file-info').forEach(item => {
+        item.onclick = () => downloadFile(item.dataset.hash, item.dataset.pass);
+      });
+
+      // Add click handlers for delete buttons
+      list.querySelectorAll('.delete-btn').forEach(button => {
+        button.onclick = (e) => {
+          e.stopPropagation();
+          const hash = button.dataset.hash;
+          const eventId = button.dataset.eventId;
+          deleteFile(hash, eventId);
+        };
+      });
+    };
+
+    // Main functions
+    const generateIdentity = () => {
+      const sk = randomBytes(32);
+      const nsec = encodeNsec(bytesToHex(sk));
+      state.sk = sk;
+      state.pendingKey = nsec;
+      return nsec;
+    };
+
+    const encodeNsec = (hex) => {
+      const bytes = hexToBytes(hex);
+      return bech32.encode('nsec', bech32.toWords(bytes));
+    };
+
+    const login = async (nsec = null) => {
+      const key = nsec || document.getElementById('nsecInput').value.trim();
+      try {
+        state.sk = hexToBytes(decodeNsec(key));
+        state.pk = getPublicKey(state.sk);
+        
+        // Store nsec in sessionStorage for persistence
+        if (nsec) {
+          sessionStorage.setItem('nsec', nsec);
+        } else {
+          const nsecInput = document.getElementById('nsecInput');
+          if (nsecInput) {
+            sessionStorage.setItem('nsec', nsecInput.value.trim());
+          }
+        }
+        
+        document.getElementById('npubDisplay').textContent = encodeNpub(state.pk);
+        document.getElementById('loginSection').classList.add('hidden');
+        document.getElementById('identitySection').classList.remove('hidden');
+        document.getElementById('shareSection').classList.remove('hidden');
+        document.getElementById('filesSection').classList.remove('hidden');
+        RELAYS.forEach(connectRelay);
+        showStatus('loginStatus', '');
+      } catch (e) {
+        showStatus('loginStatus', 'Invalid key format', 'error');
+      }
+    };
+
+    const logout = () => {
+      // Clean up all torrents
+      client.torrents.forEach(torrent => {
+        torrent.destroy(() => {
+          console.log(`Torrent ${torrent.infoHash} cleaned up during logout`);
+        });
+      });
+
+      // Clear session storage on logout
+      sessionStorage.removeItem('nsec');
+      
+      state.sockets.forEach(ws => ws.close());
+      state = { sk: null, pk: null, files: new Map(), sockets: [], pendingKey: null };
+      document.getElementById('loginSection').classList.remove('hidden');
+      document.getElementById('identitySection').classList.add('hidden');
+      document.getElementById('shareSection').classList.add('hidden');
+      document.getElementById('filesSection').classList.add('hidden');
+      document.getElementById('nsecInput').value = '';
+      document.getElementById('generatedNsec').value = '';
+      showStatus('loginStatus', 'Successfully logged out', 'success');
+    };
+
+    const shareFile = async (file) => {
+      showStatus('shareStatus', 'Encrypting file...', 'info');
+      document.getElementById('shareProgress').classList.remove('hidden');
+
+      const { blob, password, name, size, type } = await encryptFile(file);
+
+      showStatus('shareStatus', 'Creating torrent...', 'info');
+      const torrent = client.seed(blob, { announce: trackers, name: `enc_${Date.now()}` });
+
+      torrent.on('ready', () => {
+        const metadata = { hash: torrent.infoHash, password, name, size, type };
+        const d = torrent.infoHash;
+        const evt = createEvent(FILE_KIND, JSON.stringify(metadata), [['d', d]]);
+        publishEvent(evt);
+        state.files.set(d, { ...metadata, id: evt.id, created: evt.created_at });
+        renderFiles();
+        showStatus('shareStatus', `✓ File shared: ${name}`, 'success');
+        setTimeout(() => document.getElementById('shareProgress').classList.add('hidden'), 2000);
+      });
+
+      torrent.on('upload', () => {
+        showStatus('shareStatus', `Seeding: ${(torrent.uploaded / 1024).toFixed(1)} KB uploaded to ${torrent.numPeers} peers`, 'info');
+      });
+
+      torrent.on('wire', () => {
+        console.log(`New peer connected. Total: ${torrent.numPeers}`);
+      });
+
+      torrent.on('error', (err) => {
+        console.error('Torrent error:', err);
+        showStatus('shareStatus', `Error: ${err.message}`, 'error');
+      });
+    };
+
+    const downloadFile = async (hash, password) => {
+      showStatus('shareStatus', 'Connecting to peers...', 'info');
+      document.getElementById('shareProgress').classList.remove('hidden');
+      document.getElementById('shareProgressBar').style.width = '0%';
+
+      try {
+
+        const torrent = await client.get(hash) || await client.add(hash, { announce: trackers });
+        console.log(`Looking for: ${hash}`);
+
+        torrent.on('metadata', () => {
+          console.log(`Found encrypted file: ${torrent.name} (${(torrent.length / 1024).toFixed(1)} KB)`);
+          showStatus('shareStatus', `Found file: ${torrent.name}`, 'info');
+        });
+
+        torrent.on('ready', () => {
+          console.log(`Ready to download: ${torrent.name}`);
+        });
+
+        torrent.on('download', () => {
+          const progress = Math.round(torrent.progress * 100);
+          document.getElementById('shareProgressBar').style.width = `${progress}%`;
+          showStatus('shareStatus', `Downloading: ${progress}% | ${(torrent.downloadSpeed / 1024).toFixed(1)} KB/s | ${torrent.numPeers} peers`, 'info');
+        });
+
+        torrent.on('wire', () => {
+          console.log(`Connected to peer. Total: ${torrent.numPeers}`);
+        });
+
+        torrent.on('done', async () => {
+          console.log('Download complete, decrypting...');
+          showStatus('shareStatus', 'Decrypting file...', 'info');
+
+          try {
+            const file = torrent.files[0];
+            const encBlob = await file.blob();
+            const decrypted = await decryptFile(encBlob, password);
+            const fileData = state.files.get(hash);
+            const url = URL.createObjectURL(new Blob([decrypted], { type: fileData.type }));
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileData.name;
+            a.click();
+            showStatus('shareStatus', `✓ Downloaded: ${fileData.name}`, 'success');
+            console.log(`Decrypted: ${fileData.name}`);
+            setTimeout(() => {
+              URL.revokeObjectURL(url);
+              document.getElementById('shareProgress').classList.add('hidden');
+            }, 2000);
+          } catch (decryptErr) {
+            console.error('Decryption error:', decryptErr);
+            showStatus('shareStatus', `Decryption failed: ${decryptErr.message}`, 'error');
+          }
+        });
+
+        torrent.on('error', (err) => {
+          console.error('Download error:', err);
+          showStatus('shareStatus', `Download error: ${err.message}`, 'error');
+        });
+      } catch (err) {
+        console.error('Error adding torrent:', err);
+        showStatus('shareStatus', `Error: ${err.message}`, 'error');
+      }
+    };
+
+    const deleteFile = async (hash, eventId) => {
+      if (!confirm('Are you sure you want to delete this file? This action cannot be undone.')) {
+        return;
+      }
+
+      showStatus('shareStatus', 'Deleting file...', 'info');
+
+      try {
+        // Create NIP9 deletion event
+        const deletionEvent = createEvent(5, 'File deleted by user', [['e', eventId]]);
+        publishEvent(deletionEvent);
+
+        // Remove from WebTorrent if seeding
+        client.torrents.forEach(torrent => {
+          if (torrent.infoHash === hash) {
+            torrent.destroy(() => {
+              console.log(`Torrent ${hash} removed from WebTorrent`);
+            });
+          }
+        });
+
+        // Remove from local state
+        state.files.delete(hash);
+
+        // Update UI
+        renderFiles();
+        showStatus('shareStatus', '✓ File deleted successfully', 'success');
+
+      } catch (error) {
+        console.error('Delete error:', error);
+        showStatus('shareStatus', `Delete failed: ${error.message}`, 'error');
+      }
+    };
+
+    // Event listeners
+    document.getElementById('generateBtn').onclick = () => {
+      const nsec = generateIdentity();
+      const nsecInput = document.getElementById('generatedNsec');
+      if (nsec) {
+        nsecInput.value = nsec;
+        // Show a message to save the key
+        showStatus('loginStatus', '✅ Key generated! Copy it before continuing', 'success');
+        // Don't auto-login, let the user copy the key first
+      }
+    };
+
+    // Check for saved nsec in session storage on page load
+    const savedNsec = sessionStorage.getItem('nsec');
+    if (savedNsec) {
+      document.getElementById('nsecInput').value = savedNsec;
+      login(savedNsec);
+    }
+
+    document.getElementById('loginBtn').onclick = () => login();
+
+    // Make enter key work in the import key input
+    document.getElementById('nsecInput').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        login();
+      }
+    });
+    document.getElementById('logoutBtn').onclick = logout;
+    document.getElementById('copyNpubBtn').onclick = () => {
+      navigator.clipboard.writeText(document.getElementById('npubDisplay').textContent);
+      showStatus('shareStatus', '✓ Npub copied!', 'success');
+    };
+    document.getElementById('refreshBtn').onclick = () => {
+      state.files.clear();
+      state.sockets.forEach(ws => {
+        ws.send(JSON.stringify(['REQ', 'files', { kinds: [FILE_KIND], authors: [state.pk], limit: 50 }]));
+        ws.send(JSON.stringify(['REQ', 'deletions', { kinds: [5], authors: [state.pk], limit: 50 }]));
+      });
+    };
+
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('fileInput');
+    dropzone.onclick = () => fileInput.click();
+    dropzone.ondragover = (e) => { e.preventDefault(); dropzone.classList.add('dragover'); };
+    dropzone.ondragleave = () => dropzone.classList.remove('dragover');
+    dropzone.ondrop = (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('dragover');
+      if (e.dataTransfer.files[0]) shareFile(e.dataTransfer.files[0]);
+    };
+    fileInput.onchange = () => fileInput.files[0] && shareFile(fileInput.files[0]);
+  </script>
+</body>
+
+</html>
