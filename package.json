@@ -21,8 +21,5 @@
 	},
 	"dependencies": {
 		"bittorrent-tracker": "^11.2.2"
-	},
-	"devDependencies": {
-		"tsdown": "^0.15.4"
 	}
 }
