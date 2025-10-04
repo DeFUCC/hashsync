@@ -1,4 +1,0 @@
-onlyBuiltDependencies:
-  - bufferutil
-  - node-datachannel
-  - utf-8-validate
