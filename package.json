@@ -16,7 +16,6 @@
 	"scripts": {
 		"start": "node tracker.js --port 8080",
 		"local": "node tracker.js --bind localhost --port 8080",
-		"build": "tsdown",
 		"run": "node dist/tracker.js"
 	},
 	"dependencies": {
