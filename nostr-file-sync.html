@@ -353,8 +353,7 @@
     fetch('https://ngosang.github.io/trackerslist/trackers_all_ws.txt')
       .then(response => response.text())
       .then(data => {
-        const trackers = data.split('\n').filter(line => line.startsWith('wss://'))
-        trackers.forEach(tracker => trackers.push(tracker))
+        trackers.push(...data.split('\n').filter(line => line.startsWith('wss://')))
       }).catch(error => {
         console.error('Error loading additional trackers:', error)
       })
