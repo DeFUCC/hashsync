@@ -9,7 +9,7 @@
 		"url": "git+https://github.com/DeFUCC/hashsync.git"
 	},
 	"author": "davay42 <davay@defucc.me>",
-	"packageManager": "pnpm@10.15.1",
+	"packageManager": "pnpm@10.24.0",
 	"engines": {
 		"node": "22"
 	},

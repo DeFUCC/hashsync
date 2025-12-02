@@ -212,7 +212,7 @@
 
 <body>
   <div class="container">
-    <h1>Fast-track</h1>
+    <h1>Hash Sync</h1>
     <h2 style="text-align: center; font-size:medium; font-weight: normal;">Webtorrent P2P file sharing</h2>
 
     <div class="card">
@@ -300,6 +300,16 @@
     // Get tracker URLs
     const wsScheme = location.protocol === 'https:' ? 'wss' : 'ws'
     const trackerUrl = `${wsScheme}://${location.host}/announce`
+    const trackers = [trackerUrl, 'wss://tracker.openwebtorrent.com', 'wss://tracker.btorrent.xyz', 'wss://tracker.webtorrent.dev ']
+
+    fetch('https://ngosang.github.io/trackerslist/trackers_all_ws.txt')
+      .then(response => response.text())
+      .then(data => {
+        const trackers = data.split('\n').filter(line => line.startsWith('wss://'))
+        trackers.forEach(tracker => trackers.push(tracker))
+      }).catch(error => {
+        console.error('Error loading additional trackers:', error)
+      })
 
     function log(message) {
       const logEl = document.getElementById('log')
@@ -325,7 +335,7 @@
 
       try {
         const opts = {
-          announce: [trackerUrl],
+          announce: trackers,
           name: file.name
         }
 
@@ -381,7 +391,7 @@
 
       try {
         const opts = {
-          announce: [trackerUrl]
+          announce: trackers
         }
 
         const torrent = client.add(infoHash, opts)
@@ -541,7 +551,7 @@
 
     // Initialize
     log('Client initialized')
-    log(`Tracker: ${trackerUrl}`)
+    log(`Trackers: ${trackers}`)
 
     // Update stats every 5 seconds
     updateStats()

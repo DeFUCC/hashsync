@@ -98,13 +98,23 @@
       border: 2px solid #f39c12;
     }
 
-    .npub-display {
+    .npub-display,
+    .npriv-display {
       flex: 1;
       font-family: monospace;
       font-size: 13px;
       word-break: break-all;
       color: #e67e22;
       font-weight: 600;
+    }
+
+    .npriv-display {
+      filter: blur(6px);
+      transition: filter 3s;
+    }
+
+    .npriv-display:hover {
+      filter: none;
     }
 
     .file-item {
@@ -288,6 +298,7 @@
         <div style="flex: 1;">
           <div style="font-size: 12px; color: #7f8c8d; margin-bottom: 5px;">Logged in as:</div>
           <div class="npub-display" id="npubDisplay"></div>
+          <div class="npriv-display" id="nprivDisplay">PRIV</div>
         </div>
         <button id="copyNpubBtn" style="width: auto; padding: 10px 20px;">Copy</button>
         <button id="logoutBtn" class="secondary" style="width: auto; padding: 10px 20px;">Logout</button>
@@ -528,7 +539,7 @@
       try {
         state.sk = hexToBytes(decodeNsec(key));
         state.pk = getPublicKey(state.sk);
-        
+
         // Store nsec in sessionStorage for persistence
         if (nsec) {
           sessionStorage.setItem('nsec', nsec);
@@ -538,8 +549,9 @@
             sessionStorage.setItem('nsec', nsecInput.value.trim());
           }
         }
-        
+
         document.getElementById('npubDisplay').textContent = encodeNpub(state.pk);
+        document.getElementById('nprivDisplay').textContent = encodeNsec(bytesToHex(state.sk));
         document.getElementById('loginSection').classList.add('hidden');
         document.getElementById('identitySection').classList.remove('hidden');
         document.getElementById('shareSection').classList.remove('hidden');
@@ -559,9 +571,15 @@
         });
       });
 
+      // Create NIP9 deletion event
+      for (let record of Array.from(state.files.values())) {
+        const deletionEvent = createEvent(5, 'File deleted by user', [['e', record.id]]);
+        publishEvent(deletionEvent);
+      }
+
       // Clear session storage on logout
       sessionStorage.removeItem('nsec');
-      
+
       state.sockets.forEach(ws => ws.close());
       state = { sk: null, pk: null, files: new Map(), sockets: [], pendingKey: null };
       document.getElementById('loginSection').classList.remove('hidden');

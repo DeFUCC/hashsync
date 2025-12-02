@@ -8,6 +8,7 @@ import { createServer } from 'net'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
+const indexFile = 'nostr-file-sync.html'
 
 class GenericWebTorrentServer {
   constructor(options = {}) {
@@ -91,6 +92,12 @@ class GenericWebTorrentServer {
       const pathname = url.pathname
 
       if (pathname === '/') {
+        this.serveStaticFile(req, res, indexFile, 'text/html')
+      } else if (pathname === '/torrent.html') {
+        this.serveStaticFile(req, res, 'torrent.html', 'text/html')
+      } else if (pathname === '/torrent_plain.html') {
+        this.serveStaticFile(req, res, 'torrent_plain.html', 'text/html')
+      } else if (pathname === '/nostr-file-sync.html') {
         this.serveStaticFile(req, res, 'nostr-file-sync.html', 'text/html')
       } else if (pathname === '/api/stats') {
         this.serveStats(req, res)
